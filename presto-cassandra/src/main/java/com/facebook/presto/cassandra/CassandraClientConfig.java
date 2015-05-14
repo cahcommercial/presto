@@ -62,6 +62,7 @@ public class CassandraClientConfig
     private Duration clientConnectTimeout = new Duration(SocketOptions.DEFAULT_CONNECT_TIMEOUT_MILLIS, MILLISECONDS);
     private Integer clientSoLinger;
     private RetryPolicyType retryPolicy = RetryPolicyType.DEFAULT;
+    private boolean sslEnabled;
 
     @Min(0)
     public int getLimitForPartitionKeySelect()
@@ -87,6 +88,16 @@ public class CassandraClientConfig
     {
         this.maxSchemaRefreshThreads = maxSchemaRefreshThreads;
         return this;
+    }
+
+    @Config("cassandra.ssl-enabled")
+    public CassandraClientConfig setSslEnabled(boolean sslEnabled) {
+        this.sslEnabled = sslEnabled;
+        return this;
+    }
+
+    public boolean isSslEnabled() {
+        return this.sslEnabled;
     }
 
     @NotNull

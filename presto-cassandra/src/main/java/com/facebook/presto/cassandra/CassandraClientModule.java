@@ -15,6 +15,7 @@ package com.facebook.presto.cassandra;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.QueryOptions;
+import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.policies.ExponentialReconnectionPolicy;
 import com.google.common.primitives.Ints;
@@ -25,7 +26,14 @@ import com.google.inject.Scopes;
 import io.airlift.json.JsonCodec;
 
 import javax.inject.Singleton;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -119,11 +127,49 @@ public class CassandraClientModule
         options.setConsistencyLevel(config.getConsistencyLevel());
         clusterBuilder.withQueryOptions(options);
 
+        if (config.isSslEnabled()) {
+            SSLContext context = getSSLContext();
+            // Default cipher suites supported by C*
+            String[] cipherSuites = {"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"};
+            clusterBuilder.withSSL(new SSLOptions(context, cipherSuites));
+        }
+
         return new CassandraSession(
                 connectorId.toString(),
                 clusterBuilder,
                 config.getFetchSizeForPartitionKeySelect(),
                 config.getLimitForPartitionKeySelect(),
                 extraColumnMetadataCodec);
+    }
+
+    /**
+     * This returns an SSLContext that is configured to accept any certificates.
+     */
+    private static SSLContext getSSLContext()
+    {
+        try {
+            SSLContext ctx = SSLContext.getInstance("SSL");
+            ctx.init(null, new TrustManager[]
+                    {
+                    new X509TrustManager()
+                    {
+                        public X509Certificate[] getAcceptedIssuers()
+                        {
+                            return new X509Certificate[0];
+                        }
+                        public void checkClientTrusted(
+                                X509Certificate[] certs, String authType)
+                        {
+                        }
+                        public void checkServerTrusted(
+                                X509Certificate[] certs, String authType)
+                        {
+                        }
+                    }}, new SecureRandom());
+            return ctx;
+        }
+        catch (NoSuchAlgorithmException | KeyManagementException e) {
+            throw new RuntimeException("Error occurred while attempting to get SSLContext to communicate with Cassandra.", e);
+        }
     }
 }
