@@ -66,7 +66,8 @@ public enum CassandraType
     VARINT(VarcharType.VARCHAR, BigInteger.class),
     LIST(VarcharType.VARCHAR, null),
     MAP(VarcharType.VARCHAR, null),
-    SET(VarcharType.VARCHAR, null);
+    SET(VarcharType.VARCHAR, null),
+    UDT(VarcharType.VARCHAR, null);
 
     private final Type nativeType;
     private final Class<?> javaType;
@@ -145,6 +146,8 @@ public enum CassandraType
                 return VARCHAR;
             case VARINT:
                 return VARINT;
+            case UDT:
+                return UDT;
             default:
                 return null;
         }
@@ -242,7 +245,12 @@ public enum CassandraType
 
     private static String buildListValue(Row row, int i, CassandraType elemType)
     {
-        return buildArrayValue(row.getList(i, elemType.javaType), elemType);
+        if (elemType.javaType != null) {
+            return buildArrayValue(row.getList(i, elemType.javaType), elemType);
+        }
+        else {
+            return elemType.nativeType.toString();
+        }
     }
 
     private static String buildMapValue(Row row, int i, CassandraType keyType, CassandraType valueType)
