@@ -91,12 +91,14 @@ public class CassandraClientConfig
     }
 
     @Config("cassandra.ssl-enabled")
-    public CassandraClientConfig setSslEnabled(boolean sslEnabled) {
+    public CassandraClientConfig setSslEnabled(boolean sslEnabled)
+    {
         this.sslEnabled = sslEnabled;
         return this;
     }
 
-    public boolean isSslEnabled() {
+    public boolean isSslEnabled()
+    {
         return this.sslEnabled;
     }
 
